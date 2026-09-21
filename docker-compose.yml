@@ -1,0 +1,35 @@
+services:
+  postgres-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: honeygrid_db
+      POSTGRES_USER: honeygrid
+      POSTGRES_PASSWORD: ${HONEYGRID_DB_PASSWORD:?Set HONEYGRID_DB_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U honeygrid -d honeygrid_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  honeygrid-app:
+    build: .
+    ports:
+      - "127.0.0.1:8082:8082"
+      - "127.0.0.1:2222:2222"
+    environment:
+      HONEYGRID_BIND_ADDRESS: 0.0.0.0
+      HONEYGRID_SSH_BIND_ADDRESS: 0.0.0.0
+      HONEYGRID_ADMIN_PASSWORD: ${HONEYGRID_ADMIN_PASSWORD:?Set HONEYGRID_ADMIN_PASSWORD in .env}
+      HONEYGRID_AGENT_API_KEY: ${HONEYGRID_AGENT_API_KEY:-}
+      HONEYGRID_CANARY_BASE_URL: ${HONEYGRID_CANARY_BASE_URL:-http://localhost:8082}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/honeygrid_db
+      SPRING_DATASOURCE_USERNAME: honeygrid
+      SPRING_DATASOURCE_PASSWORD: ${HONEYGRID_DB_PASSWORD:?Set HONEYGRID_DB_PASSWORD in .env}
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+volumes:
+  postgres_data:

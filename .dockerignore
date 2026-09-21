@@ -1,0 +1,10 @@
+.git
+.idea
+target
+.env
+.env.*
+!.env.example
+pcap_dumps
+data
+*.log
+env-config
